@@ -1,0 +1,27 @@
+#%RAML 1.0 DataType
+type: object
+additionalProperties: true
+properties:
+  reportedBy: string
+  Category: string
+  subCategory: string
+  bussinessService:
+    enum:
+      - IT Services
+      - Accenture Support Service
+  Description: 
+  Short Description:
+  channel:
+    enum:
+      - Email
+      - Phone
+      - Self-service
+      - Virtual Agent
+      - Walk-in
+  status: string
+  assignedTo: string
+  assignmentGroup:
+    enum:
+      - Accenture Support
+      - IT Support
+  Comments: string

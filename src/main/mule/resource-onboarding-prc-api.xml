@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:servicenow="http://www.mulesoft.org/schema/mule/servicenow" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd  http://www.mulesoft.org/schema/mule/servicenow http://www.mulesoft.org/schema/mule/servicenow/current/mule-servicenow.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd">
+	<flow name="resource-onboarding-prc-api-main" doc:id="8d53a211-b357-4e0d-9849-d1d65c4dffb0">
+        <http:listener config-ref="resource-onboarding-prc-api-httpListenerConfig" path="/api/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body><![CDATA[#[payload]]]></http:body>
+                <http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:router config-ref="resource-onboarding-prc-api-config" />
+		<error-handler ref="Comon_Error_Handler"/>
+    </flow>
+    <flow name="put:\incident:application\json:resource-onboarding-prc-api-config">
+        <logger level="INFO" doc:name="Start of the flow" doc:id="6786fb10-60bf-4cbb-9b08-28ac3c629734" message='#["Start of the flow : Calling ServiceNow to Update the Incident with Comments"]'/>
+		<ee:transform doc:name="Creating the ServiceNow Request Payload">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/xml
+ns ns0 http://www.service-now.com/incident
+---
+{
+    ns0#update: {
+		number: attributes.queryParams.incidentId,
+		sys_id: payload.sys_id,
+		comments: payload.Comments       
+      }
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+		<servicenow:invoke doc:name="update incident" doc:id="0b425868-cf2f-4a0d-89a5-499fd42c5053" config-ref="ServiceNow_Config" service="incident" operation="update" showReferenceValues="ALL" allowEmptyValue="true">
+			<error-mapping sourceType="SERVICENOW:BAD_REQUEST" targetType="APP:APIKIT:BAD_REQUEST" />
+			<error-mapping sourceType="SERVICENOW:CONNECTIVITY" targetType="APP:ANY" />
+			<reconnect />
+		</servicenow:invoke>
+		<logger level="DEBUG" doc:name="ServiceNow response Logger" doc:id="a44cdaf1-d130-45c1-930f-292277525353" message="#[payload]" category="com.org.mule.servicenow" />
+		<ee:transform doc:name="Mapping Response payload from ServiceNow" doc:id="a06c38f4-db8a-44de-9377-b7a7259c7b76" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+  "sys_id": payload.body.updateResponse.sys_id,
+  "message": "Incident Updates Successfully"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="End of the flow Logger" doc:id="c35a094c-bbb5-46a6-8559-9149f91155ba" message="#[payload]"/>
+    </flow>
+	<flow name="get:\incident:resource-onboarding-prc-api-config">
+        <logger level="INFO" doc:name="Logger" doc:id="57167478-1796-49bb-8a16-3e5fd1c03687" message='#["Start of the flow: Calling ServiceNow to get Incident details"]' category="com.org.mule.servicenow"/>
+		<ee:transform doc:name="Creating the ServiceNow Request Payload">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/xml
+ns ns0 http://www.service-now.com/incident
+---
+{
+    ns0#getRecords: {
+        ns0#number: attributes.queryParams.incidentId
+    }
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+		<servicenow:invoke service="incident" operation="get" doc:name="get Incident" doc:id="5e980b3f-eb3f-4d5a-9d41-85a1ee0efd59" config-ref="ServiceNow_Config">
+		</servicenow:invoke>
+		<ee:transform doc:name="Transform Message" doc:id="cd70c708-de8e-4f56-885d-dba15c430e6b" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="ResponsePayload" ><![CDATA[%dw 2.0
+output application/json
+---
+payload.body.getRecordsResponse]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<choice doc:name="Choice" doc:id="b5d17af4-7906-48f1-9e52-4fc3cb3748d8">
+			<when expression="#[isEmpty(vars.ResponsePayload)]" >
+				<raise-error doc:name="Raise error" doc:id="78fc2cc2-6161-498f-84c6-255c53cb4613" type="CUSTOM:INCORRECT_INCIDENTID" description='Invalid Incident number response from ServiceNow'/>
+			</when>
+			<otherwise >
+				<logger level="DEBUG" doc:name="ServiceNow response Logger" doc:id="95bb3342-423b-4a20-a43d-d536620dc787" message="#[payload]" category="com.org.mule.servicenow" />
+				<ee:transform doc:name="Mapping Response payload from ServiceNow" doc:id="e5770935-131c-4742-b463-9ae8c7a3ebcf">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+var state = payload.body.getRecordsResponse.getRecordsResult.state
+var comments = payload.body.getRecordsResponse.getRecordsResult.comments_and_work_notes
+output application/json
+---
+{
+	"Incident Reported By": payload.body.getRecordsResponse.getRecordsResult.caller_id,
+	"Incident sys_id": payload.body.getRecordsResponse.getRecordsResult.sys_id,
+	"Incident Category": payload.body.getRecordsResponse.getRecordsResult.category,
+	"Incident Comments": if ((comments) != null) comments else "No Comments or Worknotes added",
+	"Incident Status": if ((state) == '1') "New" else if ((state) == '2') "Inprogress" else if ((state) == '3') "On Hold" else if ((state) == '8') "Cancelled" else if ((state) == '7') "Closed" else if ((payload.state) == '6') "Resolved" else "Invalid Status"	
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+			</otherwise>
+		</choice>
+		<logger level="INFO" doc:name="End of the flow Logger" doc:id="160557d6-e698-41d2-921c-75e7c8bbec34" message="#[payload]" category="com.org.mule.servicenow"/>
+    </flow>
+    <flow name="post:\incident:application\json:resource-onboarding-prc-api-config">
+        <logger level="INFO" doc:name="Start of the flow logger" doc:id="0a396eb5-0e76-4b9f-b7a0-359d55b4f658" message='#["Start of the flow: Calling ServiceNow to create an incident"]' category="com.org.mule.servicenow"/>
+		<ee:transform doc:name="Creating the ServiceNow Request Payload">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/xml
+ns ns0 http://www.service-now.com/incident
+---
+{
+    ns0#insert: {
+        caller_id: payload.reportedBy,
+        category: payload.Category,
+        subcategory: payload.subCategory,
+        business_service: payload.bussinessService,
+        short_description: payload.Description,
+        description: payload.Description,
+        contact_type: payload.Channel,        
+        state: payload.Status,
+		assignment_group: payload.assignmentGroup,
+		assigned_to: payload.assignedTo,
+        comments: payload.Comments       
+      }
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <servicenow:invoke doc:name="Create Incident" doc:id="dde06b03-44eb-4214-84a2-aec14aa42ef9" config-ref="ServiceNow_Config" service="incident" operation="insert">
+			<error-mapping sourceType="SERVICENOW:BAD_REQUEST" targetType="APP:APIKIT:BAD_REQUEST" />
+			<error-mapping sourceType="SERVICENOW:CONNECTIVITY" targetType="APP:ANY" />
+		</servicenow:invoke>
+		<logger level="DEBUG" doc:name="ServiceNow response Logger" doc:id="01727dea-6cc1-4afc-83f8-b7136209379b" message="#[payload]" category="com.org.mule.servicenow" />
+		<ee:transform doc:name="Mapping Response payload from ServiceNow" doc:id="d6eee2bb-25df-44e8-9456-26208569a772">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  "Incident Number": payload.body.insertResponse.number,
+  "message": "Incident Created Successfully"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+		<logger level="INFO" doc:name="End of the Flow Logger" doc:id="e5f0792a-d192-4a16-a72d-bf77c553c965" message="#[payload]" category="com.org.mule.servicenow"/>
+  </flow>
+</mule>

@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:munit="http://www.mulesoft.org/schema/mule/munit" xmlns:munit-tools="http://www.mulesoft.org/schema/mule/munit-tools"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xsi:schemaLocation="
+		http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+		http://www.mulesoft.org/schema/mule/munit http://www.mulesoft.org/schema/mule/munit/current/mule-munit.xsd
+		http://www.mulesoft.org/schema/mule/munit-tools  http://www.mulesoft.org/schema/mule/munit-tools/current/mule-munit-tools.xsd">
+	<munit:config name="new-test-suite.xml" />
+	<munit:test name="error-scenario-testsTest-404" doc:id="b275b00d-bc7a-43d8-9a23-5ea04b4b56c6" >
+		<munit:behavior >
+			<munit-tools:mock-when doc:name="http:listener" doc:id="f5c14118-7033-4f5b-991b-87789d6aba09" processor="http:listener">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="resource-onboarding-prc-api-httpListenerConfig" attributeName="config-ref" />
+					<munit-tools:with-attribute whereValue="/api/*" attributeName="path" />
+				</munit-tools:with-attributes>
+			</munit-tools:mock-when>
+			<munit-tools:mock-when doc:name="apikit:router" doc:id="60843971-ae21-41dc-8840-ef53ef34d1f3" processor="apikit:router">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="resource-onboarding-prc-api-config" attributeName="config-ref" />
+				</munit-tools:with-attributes>
+				<munit-tools:then-return >
+					<munit-tools:payload value="#[read(MunitTools::getResourceAsString('sample_data/404_IncidentNotFoundResponse.json'),'text/plain')]" mediaType="application/json" />
+					<munit-tools:error typeId="APIKIT:NOT_FOUND" />
+				</munit-tools:then-return>
+			</munit-tools:mock-when>
+		</munit:behavior>
+		<munit:execution>
+			<try doc:name="Try" doc:id="c67b5a1d-aeb6-467a-b66a-7c6636c60848" >
+				<flow-ref doc:name="resource-onboarding-prc-api-main" doc:id="14465b50-f1c4-4ded-a6cb-0139e5ec509c" name="resource-onboarding-prc-api-main" />
+				<error-handler >
+					<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="16b04fad-afef-4229-9be2-a933bed07eda" />
+				</error-handler>
+			</try>
+		</munit:execution>
+		<munit:validation >
+			<munit-tools:assert-equals doc:name="Assert equals" doc:id="e69d7862-ba08-44f8-a20f-275ef10b9bf4" actual="#[vars.httpStatus]" expected="#[404]"/>
+		</munit:validation>
+	</munit:test>
+	<munit:test name="error-scenario-testsTest-400" doc:id="af19e400-169a-49ca-8369-bff2f7597050" >
+		<munit:behavior >
+			<munit-tools:mock-when doc:name="http:listener" doc:id="8e863b85-e176-4726-a18e-b88c929078c0" processor="http:listener" >
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="resource-onboarding-prc-api-httpListenerConfig" attributeName="config-ref" />
+					<munit-tools:with-attribute whereValue="/api/*" attributeName="path" />
+				</munit-tools:with-attributes>
+			</munit-tools:mock-when>
+			<munit-tools:mock-when doc:name="apikit:router" doc:id="b8479559-3876-482d-8b7a-6daa79db2005" processor="apikit:router" >
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="resource-onboarding-prc-api-config" attributeName="config-ref" />
+				</munit-tools:with-attributes>
+				<munit-tools:then-return >
+					<munit-tools:payload value="#[read(MunitTools::getResourceAsString('sample_data/400_BadRequest.json'),'text/plain')]" mediaType="application/json" />
+					<munit-tools:error typeId="APIKIT:BAD_REQUEST" />
+				</munit-tools:then-return>
+			</munit-tools:mock-when>
+		</munit:behavior>
+		<munit:execution >
+			<try doc:name="Try" doc:id="93a3d4d2-944f-41cf-9eae-fa5159eb01d9" >
+				<flow-ref doc:name="resource-onboarding-prc-api-main" doc:id="a0ecf872-0626-4d87-a979-e0efed1d6dc3" name="resource-onboarding-prc-api-main" />
+				<error-handler >
+					<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="f68bf869-c720-4e6c-9ba8-243a9e454d73" />
+				</error-handler>
+			</try>
+		</munit:execution>
+		<munit:validation >
+			<munit-tools:assert-equals doc:name="Assert equals" doc:id="037a7499-7e3f-4a5d-870b-d846164a4f52" actual="#[vars.httpStatus]" expected="#[400]" />
+		</munit:validation>
+	</munit:test>
+	<munit:test name="error-scenario-testsTest-405" doc:id="53ca4614-cb36-4b6c-8de9-1186cf4d75a6" >
+		<munit:behavior >
+			<munit-tools:mock-when doc:name="http:listener" doc:id="ece2362d-cddc-4c1d-98d9-58b806322599" processor="http:listener" >
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="resource-onboarding-prc-api-httpListenerConfig" attributeName="config-ref" />
+					<munit-tools:with-attribute whereValue="/api/*" attributeName="path" />
+				</munit-tools:with-attributes>
+			</munit-tools:mock-when>
+			<munit-tools:mock-when doc:name="apikit:router" doc:id="18025c9e-1d1c-4115-8ba9-bdd0d8b3fb8f" processor="apikit:router" >
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="resource-onboarding-prc-api-config" attributeName="config-ref" />
+				</munit-tools:with-attributes>
+				<munit-tools:then-return >
+					<munit-tools:payload value="#[read(MunitTools::getResourceAsString('sample_data/405_MethodNotAllowed.json'),'text/plain')]" mediaType="application/json" />
+					<munit-tools:error typeId="APIKIT:METHOD_NOT_ALLOWED" />
+				</munit-tools:then-return>
+			</munit-tools:mock-when>
+		</munit:behavior>
+		<munit:execution >
+			<try doc:name="Try" doc:id="78fae735-5c6a-4904-955c-051a3d11abe6" >
+				<flow-ref doc:name="resource-onboarding-prc-api-main" doc:id="91906378-402b-439e-b095-a55cd91b5759" name="resource-onboarding-prc-api-main" />
+				<error-handler >
+					<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="5f56c5bf-a879-4f7d-9208-fc79f82a33a6" />
+				</error-handler>
+			</try>
+		</munit:execution>
+		<munit:validation>
+			<munit-tools:assert doc:name="Assert expression" doc:id="8d7698a5-2527-4e79-8ded-66dd642b4213" />
+		</munit:validation>
+	</munit:test>
+	<munit:test name="error-scenario-testsTest1-400" doc:id="332e9b91-ec9a-437b-b36e-6135ba930973" >
+		<munit:behavior >
+			<munit-tools:mock-when doc:name="http:listener" doc:id="e8ac0ebb-26f9-4be1-86fa-42de02bdc0d7" processor="http:listener" >
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="resource-onboarding-prc-api-httpListenerConfig" attributeName="config-ref" />
+					<munit-tools:with-attribute whereValue="/api/*" attributeName="path" />
+				</munit-tools:with-attributes>
+			</munit-tools:mock-when>
+			<munit-tools:mock-when doc:name="apikit:router" doc:id="63b4f2a7-146e-4fdc-a962-6d4d5aa2d6c7" processor="apikit:router" >
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="resource-onboarding-prc-api-config" attributeName="config-ref" />
+				</munit-tools:with-attributes>
+				<munit-tools:then-return >
+					<munit-tools:payload value="#[read(MunitTools::getResourceAsString('sample_data/500_InternalServerError.json'),'text/plain')]" mediaType="application/json" />
+					<munit-tools:error typeId="SERVICENOW:BAD_REQUEST" />
+				</munit-tools:then-return>
+			</munit-tools:mock-when>
+		</munit:behavior>
+		<munit:execution >
+			<try doc:name="Try" doc:id="4caf1fbe-58ad-4690-be32-c00f0bcea2f5" >
+				<flow-ref doc:name="resource-onboarding-prc-api-main" doc:id="87df2dca-70e4-40bd-ac00-9dbd0cb73383" name="resource-onboarding-prc-api-main" />
+				<error-handler >
+					<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="7d655849-ccc4-4326-b9ae-93e77bdabfaf" />
+				</error-handler>
+			</try>
+		</munit:execution>
+		<munit:validation >
+			<munit-tools:assert-equals doc:name="Assert equals" doc:id="a7157e82-ac3a-48bd-b2bc-715701630999" actual="#[vars.httpStatus]" expected="#[400]" />
+		</munit:validation>
+	</munit:test>
+	<munit:test name="error-scenario-testsTest-503" doc:id="85aab815-fe3d-4f4c-b4d9-2113bbc0c032" >
+		<munit:behavior >
+			<munit-tools:mock-when doc:name="http:listener" doc:id="cc8051e0-f571-4fdf-b5bb-38125026ce1f" processor="http:listener" >
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="resource-onboarding-prc-api-httpListenerConfig" attributeName="config-ref" />
+					<munit-tools:with-attribute whereValue="/api/*" attributeName="path" />
+				</munit-tools:with-attributes>
+			</munit-tools:mock-when>
+			<munit-tools:mock-when doc:name="apikit:router" doc:id="81520d84-f74e-4754-a303-0212c0b6c90a" processor="apikit:router" >
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="resource-onboarding-prc-api-config" attributeName="config-ref" />
+				</munit-tools:with-attributes>
+				<munit-tools:then-return >
+					<munit-tools:payload value="#[read(MunitTools::getResourceAsString('sample_data/500_InternalServerError.json'),'text/plain')]" mediaType="application/json" />
+					<munit-tools:error typeId="SERVICENOW:CONNECTIVITY" />
+				</munit-tools:then-return>
+			</munit-tools:mock-when>
+		</munit:behavior>
+		<munit:execution >
+			<try doc:name="Try" doc:id="51680979-6303-45c5-a62c-61a5a2ac2af6" >
+				<flow-ref doc:name="resource-onboarding-prc-api-main" doc:id="9ba08b3b-606d-4d3d-a512-a00437196ff2" name="resource-onboarding-prc-api-main" />
+				<error-handler >
+					<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="a0779439-bbba-4299-9005-1cb03e6d03a6" />
+				</error-handler>
+			</try>
+		</munit:execution>
+		<munit:validation >
+			<munit-tools:assert-equals doc:name="Assert equals" doc:id="c8924710-f132-402a-baa5-6818eb164198" actual="#[vars.httpStatus]" expected="#[503]" />
+		</munit:validation>
+	</munit:test>
+
+
+</mule>

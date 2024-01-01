@@ -32,8 +32,8 @@ jobs:
           servers: |
             [{
               "id": "mule-enterprise",
-              "username": "${{ secrets.mule_nexus_username }}",
-              "passowrd": "${{ secrets.mule_nexus_password }}"
+              "username": "vilas_gautham",
+              "passowrd": "Vilas150696"
           
       - name: Print effective-settings (optional)
         run: mvn help:effective-settings
